@@ -97,9 +97,9 @@ def register_cli(app):
         Please note that the storage/removal of documents depends on the CONTENTFUL_ACCESS_TOKEN's access.
         It is _imperative_ that you do not use this method with a PREVIEW token, when ENABLE_UNPUBLISHED is False!
         """
-        from contentful import DeletedAsset, DeletedEntry, Asset, Entry
+        from contentful import DeletedAsset, DeletedEntry, Asset, Entry as CFEntry
         ASSET_TYPES = (DeletedAsset, Asset)
-        ENTRY_TYPES = (Entry, DeletedEntry)
+        ENTRY_TYPES = (CFEntry, DeletedEntry)
 
         if not config.contentful:
             raise ClickException("Contentful is not configured, please specify the CONTENTFUL_SPACE_ID and "

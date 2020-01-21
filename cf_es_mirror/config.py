@@ -9,7 +9,7 @@ from contentful.client import Client
 class Config:
     # Elastic settings
     NUMBER_OF_SHARDS = 1
-    NUMBER_OF_REPLICAS = 1
+    NUMBER_OF_REPLICAS = None  # Set to something to force replicas being made.
     AUTO_EXPAND_REPLICAS = False
     INDEX_PREFIX = None
     CT_INDEX = "_content-types"  # STATIC

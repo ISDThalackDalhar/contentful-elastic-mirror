@@ -37,7 +37,7 @@ class Entry(ContentfulType):
                                   "exists for this content type.", self.space, self.content_type, self.document_id)
             return
 
-        body = copy.deeopcopy(self.data)
+        body = copy.deepcopy(self.data)
         annotations = {}
         # Annotate our body via signal output
         for handler, data in annotate_entry_index.send(self.content_type, id=self.document_id, body=body):

@@ -140,7 +140,7 @@ class ContentType(ContentfulType):
         settings = copy.deepcopy(DEFAULT_SETTINGS)
         settings.update({
             "number_of_shards": config.NUMBER_OF_SHARDS,
-            "number_of_replicas": config.NUMBER_OF_REPLICAS or 1,
+            "number_of_replicas": config.NUMBER_OF_REPLICAS if config.NUMBER_OF_REPLICAS is not None else 0,
             "auto_expand_replicas": config.AUTO_EXPAND_REPLICAS if config.AUTO_EXPAND_REPLICAS else False,
         })
         return {
