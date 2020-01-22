@@ -45,6 +45,11 @@ EXTRA_ANALYZERS_FIELDS = {
         "analyzer": "trigrams",
     }
 }
+DISPLAY_FIELD_EXTRA_FIELDS = {
+    "keyword": {
+        "type": "keyword",
+    }
+}
 
 
 def get_language_analyzer(lang_code: str, mapping_type: dict, displayField=False) -> dict:
@@ -64,14 +69,22 @@ def get_language_analyzer(lang_code: str, mapping_type: dict, displayField=False
         # Babel doesn't recognize this locale, so we can't proceed.
         return mapping_type
     lang = loc.get_language_name(ENGLISH).lower()
+    fields = {}
+    extra = {}
+    if displayField:
+        fields.update(DISPLAY_FIELD_EXTRA_FIELDS)
     if lang in config.LANGUAGE_ANALYZERS:
         # Apply the following:
         # 1. Our analyzer. Elastic has a list of supported analyzers (specified in config.LANGUAGE_ANALYZERS)
         #    for full-text searching
         # 2. Our extra analzyers. By default we add a trigrams field analyzer
         # 3. Term vector information, for faster searching and finding related documents
-        return dict(mapping_type, analyzer=lang, fields=EXTRA_ANALYZERS_FIELDS, term_vector="with_positions_offsets")
-    return copy.deepcopy(mapping_type)
+        fields.update(EXTRA_ANALYZERS_FIELDS)
+        extra.update({
+            "term_vector": "with_positions_offsets",
+            "analyzer": lang,
+        })
+    return {**mapping_type, "fields": fields, **extra}
 
 
 def get_mapping_type(field):
