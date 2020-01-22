@@ -47,7 +47,7 @@ EXTRA_ANALYZERS_FIELDS = {
 }
 
 
-def get_language_analyzer(lang_code: str, mapping_type: dict) -> dict:
+def get_language_analyzer(lang_code: str, mapping_type: dict, displayField=False) -> dict:
     """
     To provide better searchability, we provide a per-language analyzer for text fields.
 
@@ -87,11 +87,11 @@ def get_mapping_type(field):
     return mapping.DISABLED
 
 
-def per_language_field(field):
+def per_language_field(field, displayField=False):
     mapped = get_mapping_type(field)
     return {
         "properties": {
-            lc: get_language_analyzer(lc, mapped)
+            lc: get_language_analyzer(lc, mapped, displayField=displayField)
             for lc in (config.LANGUAGES if field.get("localized", False) else [config.DEFAULT_LANGUAGE])
         }
     }
@@ -148,6 +148,7 @@ class ContentType(ContentfulType):
         }
 
     def build_mapping(self):
+        displayField = self.data.get("displayField", None)
         return {
             "_source": {
                 "enabled": True,
@@ -163,14 +164,14 @@ class ContentType(ContentfulType):
                 "sys": mapping.SYS,
                 "fields": {
                     "properties": {
-                        field['id']: per_language_field(field)
+                        field['id']: per_language_field(field, field['id'] == displayField)
                         for field in sorted(self.data['fields'], key=lambda x: x['id'])
                     }
                 }
             }
         }
 
-    def reindex_if_needed(self, force=False):
+    def reindex_if_needed(self, force=False, **kwargs):
         """
         (re)creates a search index for this content type.
 
@@ -208,7 +209,7 @@ class ContentType(ContentfulType):
             new_index_name = f"{base_new_index_name}-{i}"
 
         # Signal we are about to create an index
-        pre_index_create.send(self.document_id, index=new_index_name)
+        pre_index_create.send(self.document_id, space=self.space, index=new_index_name, **kwargs)
 
         # 1. Build a new index
         config.logger.info(f"Building a new index: '{self.space}.{self.document_id}' -> '{new_index_name}'")
@@ -221,8 +222,9 @@ class ContentType(ContentfulType):
             mapping = self.build_mapping()
             annotations = {}
             # Annotate our mapping via signal
-            for handler, data in annotate_index_create.send(self.document_id, mapping=mapping):
-                merge(annotations, data)
+            for handler, data in annotate_index_create.send(self.document_id, space=self.space, mapping=mapping):
+                if isinstance(data, dict):
+                    merge(annotations, data)
             merge(mapping, annotations)
             # Build our mapping. If this process fails we have to abort early.
             config.elastic.indices.put_mapping(mapping, index=new_index_name)
@@ -289,7 +291,7 @@ class ContentType(ContentfulType):
             config.logger.warning(f"We expected index '{old_index_name}' to exist, but it was not present in the existing list of indices.")
 
         # Signal we are done creating the index
-        post_index_create.send(self.document_id, index=new_index_name)
+        post_index_create.send(self.document_id, space=self.space, index=new_index_name, **kwargs)
 
 
     def remove_index(self):

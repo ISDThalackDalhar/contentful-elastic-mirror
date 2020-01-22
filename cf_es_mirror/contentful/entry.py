@@ -40,18 +40,19 @@ class Entry(ContentfulType):
         body = copy.deepcopy(self.data)
         annotations = {}
         # Annotate our body via signal output
-        for handler, data in annotate_entry_index.send(self.content_type, id=self.document_id, body=body):
-            merge(annotations, data)
+        for handler, data in annotate_entry_index.send(self.content_type, space=self.space, id=self.document_id, body=body):
+            if isinstance(data, dict):
+                merge(annotations, data)
         merge(body, annotations)
 
         # Signal we are about to index
-        pre_entry_index.send(self.content_type, id=self.document_id, body=body)
+        pre_entry_index.send(self.content_type, space=self.space, id=self.document_id, body=body)
 
         # Simply push it to elastic and we should be done.
         config.elastic.index(index=self.content_type_index, id=self.document_id, body=body, ignore=[400, 404])
 
         # Signal we are done indexing
-        post_entry_index.send(self.content_type, id=self.document_id, body=body)
+        post_entry_index.send(self.content_type, space=self.space, id=self.document_id, body=body)
 
 
     def remove(self):
@@ -64,13 +65,13 @@ class Entry(ContentfulType):
             return
 
         # Signal we are about to remove a document
-        pre_entry_remove.send(self.content_type, id=self.document_id)
+        pre_entry_remove.send(self.content_type, space=self.space, id=self.document_id)
 
         # Tell elastic to remove the document, ignore if the document is not indexed to begin with.
         config.elastic.delete(index=self.content_type_index, id=self.document_id, ignore=[400, 404])
 
         # Signal we are done removing
-        post_entry_remove.send(self.content_type, id=self.document_id)
+        post_entry_remove.send(self.content_type, space=self.space, id=self.document_id)
 
 
     # Contentful has a events it calls webhooks for:
