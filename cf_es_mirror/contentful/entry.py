@@ -49,7 +49,7 @@ class Entry(ContentfulType):
         pre_entry_index.send(self.content_type, space=self.space, id=self.document_id, body=body)
 
         # Simply push it to elastic and we should be done.
-        config.elastic.index(index=self.content_type_index, id=self.document_id, body=body, ignore=[400, 404])
+        config.elastic.index(index=self.content_type_index, id=self.document_id, body=body, ignore=[400, 404], refresh=True)
 
         # Signal we are done indexing
         post_entry_index.send(self.content_type, space=self.space, id=self.document_id, body=body)
