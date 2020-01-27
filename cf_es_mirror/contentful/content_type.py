@@ -235,7 +235,7 @@ class ContentType(ContentfulType):
             mapping = self.build_mapping()
             annotations = {}
             # Annotate our mapping via signal
-            for handler, data in annotate_index_create.send(self.document_id, space=self.space, mapping=mapping):
+            for handler, data in annotate_index_create.send(self.document_id, space=self.space, mapping=mapping, data=self.data):
                 if isinstance(data, dict):
                     merge(annotations, data)
             merge(mapping, annotations)
