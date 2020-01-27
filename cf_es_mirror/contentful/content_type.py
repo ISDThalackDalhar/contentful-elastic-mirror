@@ -45,6 +45,11 @@ EXTRA_ANALYZERS_FIELDS = {
         "analyzer": "trigrams",
     }
 }
+KEYWORD_FIELD_EXTRA_FIELDS = {
+    "keyword": {
+        "type": "keyword",
+    }
+}
 DISPLAY_FIELD_EXTRA_FIELDS = {
     "keyword": {
         "type": "keyword",
@@ -52,7 +57,7 @@ DISPLAY_FIELD_EXTRA_FIELDS = {
 }
 
 
-def get_language_analyzer(lang_code: str, mapping_type: dict, displayField=False) -> dict:
+def get_language_analyzer(lang_code: str, mapping_type: dict, displayField=False, keywordField=False) -> dict:
     """
     To provide better searchability, we provide a per-language analyzer for text fields.
 
@@ -71,6 +76,8 @@ def get_language_analyzer(lang_code: str, mapping_type: dict, displayField=False
     lang = loc.get_language_name(ENGLISH).lower()
     fields = {}
     extra = {}
+    if keywordField:
+        fields.update(KEYWORD_FIELD_EXTRA_FIELDS)
     if displayField:
         fields.update(DISPLAY_FIELD_EXTRA_FIELDS)
     if lang in config.LANGUAGE_ANALYZERS:
@@ -100,11 +107,11 @@ def get_mapping_type(field):
     return mapping.DISABLED
 
 
-def per_language_field(field, displayField=False):
+def per_language_field(field, displayField=False, keywordField=False):
     mapped = get_mapping_type(field)
     return {
         "properties": {
-            lc: get_language_analyzer(lc, mapped, displayField=displayField)
+            lc: get_language_analyzer(lc, mapped, displayField=displayField, keywordField=keywordField)
             for lc in (config.LANGUAGES if field.get("localized", False) else [config.DEFAULT_LANGUAGE])
         }
     }
@@ -177,7 +184,7 @@ class ContentType(ContentfulType):
                 "sys": mapping.SYS,
                 "fields": {
                     "properties": {
-                        field['id']: per_language_field(field, field['id'] == displayField)
+                        field['id']: per_language_field(field, displayField=(field['id'] == displayField))
                         for field in sorted(self.data['fields'], key=lambda x: x['id'])
                     }
                 }
