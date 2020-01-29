@@ -102,7 +102,7 @@ class Config:
     @cached_property
     def contentful(self):
         if self.SPACE_ID and self.ACCESS_TOKEN:
-            return Client(api_url=self.API_HOST, space_id=self.SPACE_ID, access_token=self.ACCESS_TOKEN, content_type_cache=False)
+            return Client(api_url=self.API_HOST, space_id=self.SPACE_ID, access_token=self.ACCESS_TOKEN, content_type_cache=False, timeout_s=2)
 
     instance = None
 

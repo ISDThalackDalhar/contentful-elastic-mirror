@@ -70,7 +70,7 @@ def register_cli(app):
 
     @contentful.command()
     @click.argument("content_type")
-    @click.argument("--space", default=config.SPACE_ID)
+    @click.option("--space", default=config.SPACE_ID)
     def remove_type(content_type, space):
         """
         Removes a content type from the search index.
@@ -89,7 +89,8 @@ def register_cli(app):
 
 
     @contentful.command()
-    def import_all_documents():
+    @click.option("--token", default=None, required=False)
+    def import_all_documents(token):
         """
         Imports all documents to their specified content type(s).
 
@@ -104,13 +105,17 @@ def register_cli(app):
         if not config.contentful:
             raise ClickException("Contentful is not configured, please specify the CONTENTFUL_SPACE_ID and "
                                  "CONTENTFUL_ACCESS_TOKEN environment variables.")
-        sync = config.contentful.sync({'initial': True})
+        if not token:
+            sync = config.contentful.sync({'initial': True})
+        else:
+            sync = config.contentful.sync({'sync_token': token})
         while sync.items:
+            processed = 0
             for item in sync.items:
-                print(item)
                 if isinstance(item, ASSET_TYPES):
                     continue  # We don't index assets
                 elif isinstance(item, ENTRY_TYPES):
+                    processed += 1
                     obj = Entry(item.raw)
                     if not obj.valid_for_space():
                         continue  # We could echo something but that could get really spammy really quick.
@@ -118,8 +123,8 @@ def register_cli(app):
                         obj.unpublish()
                     else:
                         obj.publish()
+            click.echo(f"Processed {processed} items, next token: {sync.next_sync_token}")
             sync = config.contentful.sync({'sync_token': sync.next_sync_token})
-
 
     @contentful.command()
     @click.argument("docid")
