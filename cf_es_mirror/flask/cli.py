@@ -58,12 +58,11 @@ def register_cli(app):
                                  "CONTENTFUL_ACCESS_TOKEN environment variables.")
 
         for ct in config.contentful.content_types():
-            if verbose:
-                click.echo(f"Found content type '{ct.id}'")
+            if verbose: click.echo(f"Processing content type: '{ct.id}'")
             if not dry_run:
                 obj = ContentType(ct.raw)
                 if not obj.valid_for_space():
-                    click.echo("Invalid for space, skipping")
+                    if verbose: click.echo("Invalid for space, skipping")
                 else:
                     obj.reindex_if_needed(force=force)
 
@@ -82,15 +81,15 @@ def register_cli(app):
                                  "CONTENTFUL_ACCESS_TOKEN environment variables.")
         obj = ContentType({"sys": {"id": content_type, "space": {"sys": {"id": space}}}})
         if not obj.valid_for_space():
-            click.echo("Invalid for space")
-            click.exit(1)
+            raise ClickException("Invalid for space.")
         else:
             obj.unpublish()
 
 
     @contentful.command()
+    @click.option("--verbose", "-v", count=True)
     @click.option("--token", default=None, required=False)
-    def import_all_documents(token):
+    def import_all_documents(verbose, token):
         """
         Imports all documents to their specified content type(s).
 
@@ -106,10 +105,13 @@ def register_cli(app):
             raise ClickException("Contentful is not configured, please specify the CONTENTFUL_SPACE_ID and "
                                  "CONTENTFUL_ACCESS_TOKEN environment variables.")
         if not token:
+            if verbose: click.echo("Performing initial sync.")
             sync = config.contentful.sync({'initial': True})
         else:
+            if verbose: click.echo("Continuing with existing sync.")
             sync = config.contentful.sync({'sync_token': token})
         while sync.items:
+            if verbose: click.echo(f"Sync batch items to process: {len(sync.items)}.")
             processed = 0
             for item in sync.items:
                 if isinstance(item, ASSET_TYPES):
@@ -123,8 +125,37 @@ def register_cli(app):
                         obj.unpublish()
                     else:
                         obj.publish()
-            click.echo(f"Processed {processed} items, next token: {sync.next_sync_token}")
+            click.echo(f"Processed {processed} items, next token: {sync.next_sync_token}.")
             sync = config.contentful.sync({'sync_token': sync.next_sync_token})
+
+
+    @contentful.command()
+    @click.option("--verbose", "-v", count=True)
+    @click.option("--force", "-f", default=False, is_flag=True)
+    def full_import(verbose, force):
+        """
+        Imports the entire space if the database is empty
+        ---
+        Use the --force toggle to force this regardless of data already existing in the database
+        """
+        doc = {
+            "query": {
+                "match_all": {}
+            }
+        }
+        if not config.contentful:
+            raise ClickException("Contentful is not configured, please specify the CONTENTFUL_SPACE_ID and "
+                                 "CONTENTFUL_ACCESS_TOKEN environment variables.")
+        if not force:
+            results = config.elastic.search(index=config.content_type_index(), body=doc)
+            if len(results["hits"]["hits"]) > 0:
+                click.echo(f"Data already exists in database, skipping import. Use --force to force import on an existing database.")
+                return
+        click.echo(f"Importing all content types.")
+        update(verbose=verbose)
+        click.echo(f"Importing all content. This might take a while...")
+        import_all_documents(verbose=verbose)
+        
 
     @contentful.command()
     @click.argument("docid")
@@ -145,8 +176,7 @@ def register_cli(app):
             if obj.valid_for_space():
                 obj.publish()
             else:
-                click.echo("Entry is not valid for space")
-                click.exit(1)
+                raise ClickException("Entry is not valid for this space.")
         except:
             raise ClickException("Unable to find item with that content ID.")
 
@@ -176,4 +206,4 @@ def register_cli(app):
             obj.delete()
         else:
             click.echo("Entry is not valid for space")
-            click.exit(1)
+            return
