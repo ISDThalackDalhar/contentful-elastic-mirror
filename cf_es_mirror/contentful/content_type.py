@@ -301,7 +301,8 @@ class ContentType(ContentfulType):
             # Store our task data in the reindex index, so we effective lock it
             config.elastic.create(index=self.reindex_index, id=self.document_id, body=data)
             # Now we wait until it's done
-            config.elastic.tasks.get(task_id=data['task'], wait_for_completion=True, ignore=[400, 404])
+            # We're setting a longer timeout here since reindexing can take quite a while. (Default is 10s)
+            config.elastic.tasks.get(task_id=data['task'], wait_for_completion=True, ignore=[400, 404], request_timeout=90)
             # Remove the task item, since we're done.
             config.elastic.delete(index=self.reindex_index, id=self.document_id, ignore=[400, 404])
             config.logger.info(f"Removing old index: '{old_index_name}'")
