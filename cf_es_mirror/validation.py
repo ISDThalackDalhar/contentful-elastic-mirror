@@ -39,6 +39,15 @@ def validate_request(headers, authorization, json_data):
         return -1
 
     if config.WEBHOOK_AUTH:
+        if authorization is None:
+            auth_header = headers.get("Authorization", " ")
+            auth_type, auth_info = auth_header.split(None, 1)
+            if auth_type == "Basic":
+                try:
+                    username, password = base64.b64decode(auth_info).decode("ascii").split(":")
+                except Exception:
+                    return -2
+                authorization = dict(username=username, password=password)
         try:
             if config.WEBHOOK_AUTH[authorization["username"]] != authorization["password"]:
                 config.logger.info("Received unauthenticated request.")

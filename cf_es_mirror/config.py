@@ -168,7 +168,10 @@ class Config:
         obj.WEBHOOK_AUTH = get("WEBHOOK_AUTH", "CONTENTFUL", {}, conv=split_dict)
 
         obj.ALLOW_UNPUBLISHED = get("ALLOW_UNPUBLISHED", "", cls.ALLOW_UNPUBLISHED, conv=to_bool)
-        obj.LANGUAGES = get("LANGUAGES", "", cls.LANGUAGES, conv=split_list)
+
+        obj.LANGUAGES = get("LANGUAGES", "CONTENTFUL", None, conv=split_list)
+        if not obj.LANGUAGES:
+            obj.LANGUAGES = get("LANGUAGES", "", cls.LANGUAGES, conv=split_list)
         obj.DEFAULT_LANGUAGE = get("DEFAULT_LANGUAGE", "", obj.LANGUAGES[0])
         obj.LANGUAGE_ANALYZERS = get("LANGUAGE_ANALYZERS", "", cls.LANGUAGE_ANALYZERS)
 
