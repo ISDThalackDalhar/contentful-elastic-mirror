@@ -1,9 +1,9 @@
 import os
 
 from cf_es_mirror.util import to_bool, to_int, split_dict, split_list, cached_property
+from cf_es_mirror.contentful import Client
 
 from elasticsearch import Elasticsearch
-from contentful.client import Client
 
 
 class Config:
