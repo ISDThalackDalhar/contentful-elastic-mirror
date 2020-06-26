@@ -38,9 +38,11 @@ def split_list(x: str, sep: str = ',', default: Any = None, maxsplit: int = -1):
 
 
 def split_dict(x: str, sep: str = ',', valsep: str = '=', default: Any = None):
-    x = split_list(x, sep=sep, default=None)
     if not x:
         return default
+    if isinstance(x, dict):
+        return x
+    x = split_list(x, sep=sep, default=None)
     assert all(valsep in y for y in x), "Dict values must be in the format 'key%svalue'" % valsep
     return {key: val for key, val in [y.split(valsep, 1) for y in x]}
 
