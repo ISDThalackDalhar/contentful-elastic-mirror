@@ -1,6 +1,8 @@
 import click
 from click.exceptions import ClickException
 
+from elasticsearch.exceptions import NotFoundError
+
 from cf_es_mirror.config import config
 from cf_es_mirror.contentful import ContentType, Entry
 
@@ -147,10 +149,14 @@ def register_cli(app):
             raise ClickException("Contentful is not configured, please specify the CONTENTFUL_SPACE_ID and "
                                  "CONTENTFUL_ACCESS_TOKEN environment variables.")
         if not force:
-            results = config.elastic.search(index=config.content_type_index(), body=doc)
-            if len(results["hits"]["hits"]) > 0:
-                click.echo(f"Data already exists in database, skipping import. Use --force to force import on an existing database.")
-                return
+            try:
+                results = config.elastic.search(index=config.content_type_index(), body=doc)
+                if len(results["hits"]["hits"]) > 0:
+                    click.echo(f"Data already exists in database, skipping import. Use --force to force import on an existing database.")
+                    return
+            except NotFoundError:  # This happens when the index does not exist, at which point we have an empty database.
+                click.echo(f"Index {config.content_type_index} does not exist. Assume this is an empty database.")
+                pass
         click.echo(f"Importing all content types.")
         update(verbose=verbose)
         click.echo(f"Importing all content. This might take a while...")
