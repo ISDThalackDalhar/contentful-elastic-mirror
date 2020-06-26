@@ -44,12 +44,7 @@ def register_cli(app):
         click.echo("Configuration matches")
         ctx.exit(0)
 
-
-    @contentful.command()
-    @click.option("--verbose", "-v", count=True)
-    @click.option("--dry-run", "-n", default=False, is_flag=True)
-    @click.option("--force", "-f", default=False, is_flag=True)
-    def update(verbose, dry_run, force):
+    def _update(verbose, dry_run=False, force=False):
         """
         Fetches all content types from the back-end, updating where needed
         ---
@@ -67,6 +62,14 @@ def register_cli(app):
                     if verbose: click.echo("Invalid for space, skipping")
                 else:
                     obj.reindex_if_needed(force=force)
+
+
+    @contentful.command()
+    @click.option("--verbose", "-v", count=True)
+    @click.option("--dry-run", "-n", default=False, is_flag=True)
+    @click.option("--force", "-f", default=False, is_flag=True)
+    def update(verbose, dry_run, force):
+        _update(verbose, dry_run, force)
 
 
     @contentful.command()
@@ -88,10 +91,7 @@ def register_cli(app):
             obj.unpublish()
 
 
-    @contentful.command()
-    @click.option("--verbose", "-v", count=True)
-    @click.option("--token", default=None, required=False)
-    def import_all_documents(verbose, token):
+    def _import_all_documents(verbose, token=None):
         """
         Imports all documents to their specified content type(s).
 
@@ -133,6 +133,13 @@ def register_cli(app):
 
     @contentful.command()
     @click.option("--verbose", "-v", count=True)
+    @click.option("--token", default=None, required=False)
+    def import_all_documents(verbose, token):
+        _import_all_documents(verbose, token)
+
+
+    @contentful.command()
+    @click.option("--verbose", "-v", count=True)
     @click.option("--force", "-f", default=False, is_flag=True)
     def full_import(verbose, force):
         """
@@ -155,12 +162,12 @@ def register_cli(app):
                     click.echo(f"Data already exists in database, skipping import. Use --force to force import on an existing database.")
                     return
             except NotFoundError:  # This happens when the index does not exist, at which point we have an empty database.
-                click.echo(f"Index {config.content_type_index} does not exist. Assume this is an empty database.")
+                click.echo(f"Index {config.content_type_index()} does not exist. Assume this is an empty database.")
                 pass
         click.echo(f"Importing all content types.")
-        update(verbose=verbose)
+        _update(verbose=verbose)
         click.echo(f"Importing all content. This might take a while...")
-        import_all_documents(verbose=verbose)
+        _import_all_documents(verbose=verbose)
         
 
     @contentful.command()
