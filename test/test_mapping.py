@@ -5,6 +5,7 @@ from .base import BaseTestCase, config
 from cf_es_mirror.contentful import mapping
 from cf_es_mirror.contentful.content_type import _get_mapping_type as get_mapping_type, _per_language_field as per_language_field, ENGLISH
 
+
 class ValidationTestCase(BaseTestCase):
     def test_base_mapping_types(self):
         self.assertEqual(get_mapping_type({"type": ""}), mapping.DISABLED)

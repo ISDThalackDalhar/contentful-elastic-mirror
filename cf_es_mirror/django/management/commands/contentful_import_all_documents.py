@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from cf_es_mirror.config import config
 from cf_es_mirror.contentful import ContentType, Entry
 
+
 class Command(BaseCommand):
     """
     Imports all documents to their specified content type(s).

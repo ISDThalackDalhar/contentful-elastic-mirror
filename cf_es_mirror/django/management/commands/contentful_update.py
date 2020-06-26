@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from cf_es_mirror.config import config
 from cf_es_mirror.contentful import ContentType, Entry
 
+
 class Command(BaseCommand):
     """
     Fetches all content types from the back-end, updating where needed

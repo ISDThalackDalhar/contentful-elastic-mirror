@@ -1,7 +1,6 @@
 import os
 
 from cf_es_mirror.util import to_bool, to_int, split_dict, split_list, cached_property
-from cf_es_mirror.contentful import Client
 
 from elasticsearch import Elasticsearch
 
@@ -101,6 +100,7 @@ class Config:
 
     @cached_property
     def contentful(self):
+        from cf_es_mirror.contentful.client import Client
         if self.SPACE_ID and self.ACCESS_TOKEN:
             return Client(api_url=self.API_HOST, space_id=self.SPACE_ID, access_token=self.ACCESS_TOKEN, content_type_cache=False, timeout_s=2)
 
